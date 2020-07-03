@@ -395,9 +395,33 @@ def parse():
                     | unary_expr ";"
                     | declaration ";"
                     | assigment ";"
+                    | declare_struct ";"
                     | function_call ";"
                     | jump_statement ";" ''' 
         p[0] = p[1]
+
+    def p_declare_struct(p):
+        '''declare_struct : declare_struct "," decl_index 
+                        | declare_struct "," ID
+                        | STRUCT ID decl_index
+                        | STRUCT ID ID '''
+        new_branch = branch()
+        new_branch.setType("ARRAY")
+        if p[1] == 'struct':
+            new_branch.add(leaf(p[2], "ID"))
+            if type(p[3]) == str:
+                new_branch.add(leaf(p[3], "ID"))
+            else:
+                new_branch.add(p[3])
+        else:
+            new_branch = p[1]
+            if type(p[3]) == str:
+                new_branch.add(leaf(p[3], "ID"))
+            else:
+                new_branch.add(p[3])
+
+        p[0] = new_branch
+
 
     def p_assigment(p):
         'assigment : is_array_term assign_op expression %prec ASSIGN'
@@ -463,7 +487,20 @@ def parse():
                                 | DO "{" compound_statement WHILE "(" expression ")" ";"
                                 | FOR "(" declaration ";" expression ";" unary_expr ")" "{" compound_statement
                                 | FOR "(" sub_decl ";" expression ";" unary_expr ")" "{" compound_statement '''
-        pass
+        new_branch = branch()
+        if p[1] == "while":
+            pass
+        elif p[1] == "do":
+            pass
+        else:
+            new_branch.setType("FOR")
+            new_branch.add(p[3])
+            new_branch.add(p[5])
+            new_branch.add(p[7])
+            if p[10] != None:
+                new_branch.add(p[10])
+
+        p[0] = new_branch
 
     def p_jump_stament(p):
         '''jump_statement : CONTINUE
@@ -499,6 +536,7 @@ def parse():
                     | decl_index "=" expression
                     | decl_index "=" READ "(" ")"
                     | decl_index
+                    | decl_array
                     | ID '''
         global sym_table
         new_branch = branch()
@@ -538,12 +576,18 @@ def parse():
     def p_decl_index(p):
         '''decl_index : decl_index "[" term "]"
                     | ID "[" term "]" '''
-        pass
+        if type(p[1]) == leaf:
+            p[0] = leaf(p[1], "ID")
+        else:
+            p[0] = p[1]
 
     def p_decl_array(p):
         '''decl_array : decl_array "[" "]"
                     | ID "[" "]" '''
-        pass
+        if type(p[1]) == leaf:
+            p[0] = leaf(p[1], "ID")
+        else:
+            p[0] = p[1]
 
     def p_assing_op(p):
         '''assign_op : "="
@@ -586,34 +630,63 @@ def parse():
                     | "-" "-" is_array_term %prec PRE
                     | is_array_term "+" "+" %prec POST
                     | is_array_term "-" "-" %prec POST '''
-        l_leaf = p[1]
+        
         r_leaf = leaf("1", "INT")
         global sym_table
         new_branch = branch()
-        new_branch.add(l_leaf)
-        new_branch.add(r_leaf)
         if p[1] == '+':
+            l_leaf = p[3]
             new_branch.setType("ADD")
             sym_table.appendGrammar(12, 'unary_expr -> ++ is_array_term')
         elif p[1] == '-':
+            l_leaf = p[3]
             new_branch.setType("SUB")
             sym_table.appendGrammar(12, 'unary_expr -> -- is_array_term')
         # TODO create an special node type that indicates ADD and SUB will occur in the next block
         elif p[2] == '+':
+            l_leaf = p[1]
             new_branch.setType("ADD")
             sym_table.appendGrammar(12, 'unary_expr -> is_array_term ++')
         elif p[2] == '-':
+            l_leaf = p[1]
             new_branch.setType("SUB")
             sym_table.appendGrammar(12, 'unary_expr -> is_array_term --')
+
+        new_branch.add(l_leaf)
+        new_branch.add(r_leaf)
+
+        new_branch2 = branch()
+        new_branch2.add(l_leaf)
+        new_branch2.add(new_branch)
+        new_branch2.setType("ASSIGN")
+        p[0] = new_branch2
 
     def p_is_array_term(p):
         '''is_array_term : is_array_term '[' expression ']'
                         | is_array_term '.' ID
                         | ID '''
         if len(p) > 4:
-            pass
+            if type(p[1]) == leaf:
+                new_branch = branch()
+                new_branch.setType("ACCESS")
+                new_branch.add(p[1])
+                new_branch.add(p[3])
+                p[0] = new_branch
+            else:
+                new_branch = p[1]
+                new_branch.add(p[3])
+                p[0] = new_branch
         elif len(p) > 2:
-            pass
+            if type(p[1]) == leaf:
+                new_branch = branch()
+                new_branch.setType("ACCESS")
+                new_branch.add(p[1])
+                new_branch.add(leaf(p[3], "STRING"))
+                p[0] = new_branch
+            else:
+                new_branch = p[1]
+                new_branch.add(leaf(p[3], "STRING"))
+                p[0] = new_branch
         else:
             p[0] = leaf(p[1], "ID")
 

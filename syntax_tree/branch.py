@@ -139,7 +139,14 @@ class branch(node):
             node.TYPE["GE_OP"]  : translate.GE_OP,
             node.TYPE["LTHAN"]  : translate.LTHAN,
             node.TYPE["LE_OP"]  : translate.LE_OP,
-            
+
+            # STRUCTS
+            node.TYPE["ARRAY"]  : translate.ARRAY,
+            node.TYPE["ACCESS"]  : translate.ACCESS,
+            node.TYPE["STRUCT"]  : translate.STRUCT,
+
+            # LOOPS
+            node.TYPE["FOR"]  : translate.FOR,
 
             node.TYPE["ASSIGN"] : translate.ASSIGN,
             node.TYPE["PRINT"]  : translate.PRINT,

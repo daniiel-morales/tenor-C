@@ -471,6 +471,86 @@ def ASSIGN(node, sym_table):
 
 ####################################
 
+def ARRAY(node, sym_table):
+    typ = node.getChild(0).getType()
+    for index in range(1, node.getSize(), 1):
+        e = node.getChild(index)
+        ref = sym_table.getTemp()
+        node.setRef(ref)
+        e.setRef(ref)
+        node.gen3D('declare', ref,'array()')
+        sym_table.add(e.getValue(), typ, 0, 'ID',ref)
+
+    return node
+
+def ACCESS(node, sym_table):
+    e = node.getChild(0).execute(sym_table)
+    pos = ''
+    for index in range(1, node.getSize(), 1):
+        attrib = node.getChild(index)
+        if attrib.getType() != node.TYPE["STRING"]:
+            attrib = node.getChild(index).execute(sym_table)
+        pos = pos + '[' + str(attrib.getRef()) + ']'
+
+    node.setRef(str(e.getRef()) + pos)
+    return node
+
+def STRUCT(node, sym_table):
+    name = node.getChild(0).getValue()
+    attribs = node.getChild(1).getSize()
+
+    sym_table.add(name, 'STRUCT', attribs, 'STRUCT', 'GLOBAL')
+
+    node.clear3D()
+    node.setRef('')
+    node.setValue('')
+
+    return node
+
+#################
+
+# LOOPS
+
+def FOR(node, sym_table):
+    init = node.getChild(0)
+    init.execute(sym_table)
+    node.append3D(init.get3D())
+
+    # FOR loop label
+    for_label = sym_table.getLabel()
+    node.gen3D('label', for_label)
+
+    condition = node.getChild(1)
+    condition.execute(sym_table)
+    node.append3D(condition.get3D())
+
+    true_list = sym_table.getLabel()
+    false_list = sym_table.getLabel()
+    node.gen3D('if', condition.getRef(), true_list)
+    node.gen3D('goto', false_list)
+
+    node.gen3D('label', true_list)
+
+    if node.getSize()>2:
+        execute_scope = node.getChild(3)
+        execute_scope.execute(sym_table)
+        node.append3D(execute_scope.get3D())
+    
+    counter = node.getChild(2)
+    counter.execute(sym_table)
+    node.append3D(counter.get3D())
+
+    # generate loop
+    node.gen3D('goto', for_label)
+
+    # exit label
+    node.gen3D('label', false_list)
+
+    return node
+
+
+#################
+
 def TOINT(node, sym_table):
     return CONVERT('int', node, sym_table)
 
