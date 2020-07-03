@@ -489,9 +489,15 @@ def parse():
                                 | FOR "(" sub_decl ";" expression ";" unary_expr ")" "{" compound_statement '''
         new_branch = branch()
         if p[1] == "while":
-            pass
+            new_branch.setType("WHILE")
+            new_branch.add(p[3])
+            if p[6] != None:
+                new_branch.add(p[6])
         elif p[1] == "do":
-            pass
+            new_branch.setType("WHILE")
+            new_branch.add(p[6])
+            if p[3] != None:
+                new_branch.add(p[3])
         else:
             new_branch.setType("FOR")
             new_branch.add(p[3])

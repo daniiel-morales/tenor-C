@@ -548,6 +548,48 @@ def FOR(node, sym_table):
 
     return node
 
+def DO(node, sym_table):
+    # DO loop label
+    do_label = sym_table.getLabel()
+    node.gen3D('label', do_label)
+
+    if node.getSize()>1:
+        execute_scope = node.getChild(1)
+        execute_scope.execute(sym_table)
+        node.append3D(execute_scope.get3D())
+
+    condition = node.getChild(0)
+    condition.execute(sym_table)
+    node.append3D(condition.get3D())
+
+    false_list = sym_table.getLabel()
+    node.gen3D('if', condition.getRef(), do_label)
+    node.gen3D('goto', false_list)
+    node.gen3D('label', false_list)
+
+def WHILE(node, sym_table):
+    # WHILE loop label
+    while_label = sym_table.getLabel()
+    node.gen3D('label', while_label)
+
+    condition = node.getChild(0)
+    condition.execute(sym_table)
+    node.append3D(condition.get3D())
+
+    true_list = sym_table.getLabel()
+    false_list = sym_table.getLabel()
+    node.gen3D('if', condition.getRef(), true_list)
+    node.gen3D('goto', false_list)
+
+    node.gen3D('label', true_list)
+
+    if node.getSize()>1:
+        execute_scope = node.getChild(1)
+        execute_scope.execute(sym_table)
+        node.append3D(execute_scope.get3D())
+
+    node.gen3D('goto', while_label)
+    node.gen3D('label', false_list)
 
 #################
 

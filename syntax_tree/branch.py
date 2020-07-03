@@ -147,6 +147,8 @@ class branch(node):
 
             # LOOPS
             node.TYPE["FOR"]  : translate.FOR,
+            node.TYPE["DO"]  : translate.DO,
+            node.TYPE["WHILE"]  : translate.WHILE,
 
             node.TYPE["ASSIGN"] : translate.ASSIGN,
             node.TYPE["PRINT"]  : translate.PRINT,
