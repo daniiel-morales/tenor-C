@@ -69,8 +69,8 @@ class App:
 
         # run menu
         runmenu = Menu(menubar, tearoff=0)
-        runmenu.add_command(label="Top-Down Analysis", command=self.donothing)
-        runmenu.add_command(label="Bottom-Up Analysis", command=self.execute_current_tab_lef)
+        runmenu.add_command(label="Execute Analysis", command=self.execute_current_tab_lef)
+        runmenu.add_command(label="Show Intermediate Code", command=self.show3D)
 
         runmenu.add_separator()
 
@@ -187,6 +187,18 @@ class App:
         self.__ast.graph()
         showAST()
 
+    codeGenerated = None
+    def show3D(self):
+        if self.codeGenerated != None:
+            window = Toplevel()
+            window['bg'] = 'black'
+
+            grammar = Text(window)
+            grammar['fg'] = 'white'
+            grammar['bg'] = 'black'
+            grammar.insert(1.0, self.codeGenerated)
+            grammar.pack(side='left')
+
     def show_info(self):
         window = Toplevel()
         window['bg'] = 'black'
@@ -197,47 +209,46 @@ class App:
         grammar['text'] = 'Augus intermediate code by Engr. Espino\nTenorC 1.23.2a Developed by @danii_mor\n 201314810'
         grammar.pack(side='left')
 
-    # TODO change to generate code lines
     def update_line_debugg(self, event= None):
         self.count["text"] = "Line: %s" % str(self.c+1)
 
-        
-        # split lines
-        selectedTab = self.tabs.index("current")
-        currentTextArea = self.tabs.winfo_children()[selectedTab+1].textarea
-        lines = currentTextArea.get('1.0','end-1c').split('\n')
+        lines = self.codeGenerated.split('\n')
 
         # start execute line by self.c counter
-        ply_left = titus.parse()
+        ply_left_3d = titus.parse()
         if self.c < len(lines):
             if "main:" not in lines[self.c]:
                 line = "main:" + lines[self.c]
-                result  = ply_left(titus, line)
+                result  = ply_left_3d(titus, line)
                 if result:
                     ast = result[0]
                     ast.setType("LABEL")
                     ast.setValue("S")
                     ast.root = result[0]
 
-                    if self.__sym_table != None:
-                        new_table =  {**self.__sym_table.printTable(), **result[1].printTable()}
+                    if self.__sym_table_3d != None:
+                        new_table =  {**self.__sym_table_3d.printTable(), **result[1].printTable()}
                         for sym_id in new_table:
                             sym = new_table[sym_id]
                             if sym != None:
+                                if type(sym) == dict:
+                                    continue
                                 if sym.getValue() == None:
                                     try:
-                                        new_table[sym_id] = self.__sym_table.printTable()[sym_id]
+                                        new_table[sym_id] = self.__sym_table_3d.printTable()[sym_id]
                                     except:
                                         pass
-                        self.__sym_table.setTable({**self.__sym_table.printTable(), **new_table})
+                        self.__sym_table_3d.setTable({**self.__sym_table_3d.printTable(), **new_table})
                     else:
-                        self.__sym_table = result[1]
+                        self.__sym_table_3d = result[1]
+                        # define mode for syntax-tree know how to autoexecute
+                        self.__sym_table_3d.setMode(1)
 
                     compute = [None, None]
 
                     # start execute
-                    self.__sym_table.terminal = self.terminal
-                    compute = ast.start_execute(self.__sym_table, "MAIN")
+                    self.__sym_table_3d.terminal = self.terminal
+                    compute = ast.start_execute(self.__sym_table_3d, "MAIN")
                     # lookup the last line
                     index = self.terminal.search(r'\n', "insert", backwards=True, regexp=True)
                     txt = self.terminal.get(str(index),'end-1c')
@@ -247,7 +258,7 @@ class App:
                         index = self.terminal.index("%s+1c" % index)
                     if compute[0]:
                         self.terminal.insert(str(float(index)+1), compute[0])
-                        self.__sym_table.cleanLog()
+                        self.__sym_table_3d.cleanLog()
                     if compute[1]:
                         goto_line = 0
                         for l in lines:
@@ -266,14 +277,15 @@ class App:
                         index ="1.0"
                     else:
                         index = self.terminal.index("%s+1c" % index)
-                    self.terminal.insert(str(float(index)+1), "\nTitus>> Error Report Generated\n")
+                    self.terminal.insert(str(float(index)+1), "\nTenorC>> Error Report Generated\n")
 
             self.c = self.c + 1
             self.label_last_line["text"] = "Line: %s" % str(self.c+1)
 
     c = 0
     def execute_debug(self, event = None):
-        self.__sym_table = None
+        self.__sym_table_3d = None
+
         self.c = 0
         # create debug player
         window = Toplevel()
@@ -304,6 +316,28 @@ class App:
         window.grid_columnconfigure(2, weight=1)
         window.resizable(width=True, height=False)
 
+
+        # get all txt from current tab
+        selectedTab = self.tabs.index("current")
+        currentTextArea = self.tabs.winfo_children()[selectedTab+1].textarea
+        input = currentTextArea.get('1.0','end-1c')
+
+        # new singleton symbol table
+        self.__sym_table = table()
+
+        # define mode for syntax-tree know how to autoexecute
+        self.__sym_table.setMode(0)
+
+        # start lex and sintactic analysis
+        ply_left = tenorC.parse()
+
+        self.__ast  = ply_left(tenorC, input, self.__sym_table)
+
+        # TODO sintax error recover
+        if self.__ast != None:
+            self.__ast.execute(self.__sym_table)
+            self.codeGenerated = self.__ast.get3D()
+
     def execute_current_tab_lef(self):
         # get all txt from current tab
         selectedTab = self.tabs.index("current")
@@ -324,13 +358,12 @@ class App:
         # TODO sintax error recover
         if self.__ast != None:
             self.__ast.execute(self.__sym_table)
-            codeGenerated = self.__ast.get3D()
-            print(codeGenerated)
+            self.codeGenerated = self.__ast.get3D()
 
             ## start executing
 
             ply_left_3d = titus.parse()
-            result  = ply_left_3d(titus, codeGenerated)
+            result  = ply_left_3d(titus, self.codeGenerated)
 
             if result:
                 ast_3D = result[0]
@@ -372,7 +405,7 @@ class App:
                 index ="1.0"
             else:
                 index = self.terminal.index("%s+1c" % index)
-            self.terminal.insert(str(float(index)+1), "\nTitus>> Error Report Generated\n")
+            self.terminal.insert(str(float(index)+1), "\nTenorC>> Error Report Generated\n")
     
     def execute_command(self, event):
         # lookup the last line
@@ -447,7 +480,7 @@ class App:
 
     def file_save_as(self, event=None, filepath=None):
         if filepath == None:
-            filepath = filedialog.asksaveasfilename(filetypes=(('Text files', '*.txt'), ('Titus files', '*.ti'), ('All files', '*.*'))) #defaultextension='.txt'
+            filepath = filedialog.asksaveasfilename(filetypes=(('Text files', '*.txt'), ('C files', '*.mc'), ('All files', '*.*'))) #defaultextension='.txt'
         try:
             with open(filepath, 'wb') as f:
                 selectedTab = self.tabs.index("current")
