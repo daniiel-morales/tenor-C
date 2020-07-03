@@ -77,6 +77,7 @@ class App:
         runmenu.add_command(label="Symbol Table", command=self.show_sym_table)
         runmenu.add_command(label="Error Report", command=self.show_error)
         runmenu.add_command(label="Abstract Syntax Tree", command=self.show_ast)
+        runmenu.add_command(label="Optimized Report", command=self.showOptimized)
         runmenu.add_command(label="Grammar", command=self.show_grammar)
 
         runmenu.add_separator()
@@ -337,6 +338,7 @@ class App:
         if self.__ast != None:
             self.__ast.execute(self.__sym_table)
             self.codeGenerated = self.__ast.get3D()
+            self.codeGenerated = self.optimize(self.codeGenerated)
 
     def execute_current_tab_lef(self):
         # get all txt from current tab
@@ -359,7 +361,7 @@ class App:
         if self.__ast != None:
             self.__ast.execute(self.__sym_table)
             self.codeGenerated = self.__ast.get3D()
-
+            self.codeGenerated = self.optimize(self.codeGenerated)
             ## start executing
 
             ply_left_3d = titus.parse()
@@ -506,3 +508,61 @@ class App:
 
     def donothing(self):
         print("clicked")
+
+    def showOptimized(self):
+        window = Toplevel()
+        window['bg'] = 'black'
+
+        grammar = Message(window)
+        grammar['fg'] = 'white'
+        grammar['bg'] = 'black'
+        grammar['text'] = self.rules
+        grammar.pack(side='left')
+
+    rules = ''
+    def optimize(self, code3D):
+        self.rules = ''
+        lines = code3D.split('\n')
+        codeOptimized = ''
+        c = 0
+        for line in lines:
+            if '+ 0' in line:
+                if line[0:line.find('=')] in line[line.find('=')+1: line.find('+')]:
+                    # rule 8
+                    self.rules += 'Regla #8 aplicada en la linea: '+ str(c) + '\n'
+                    continue
+                else:
+                    # rule 12
+                    line = line[0: line.find('+')] + ';'
+                    self.rules += 'Regla #12 aplicada en la linea: '+ str(c) + '\n'
+            elif '- 0' in line:
+                if line[0:line.find('=')] in line[line.find('=')+1: line.find('-')]:
+                    # rule 9
+                    self.rules += 'Regla #9 aplicada en la linea: '+ str(c) + '\n'
+                    continue
+                else:
+                    # rule 13
+                    line = line[0: line.find('-')] + ';'
+                    self.rules += 'Regla #13 aplicada en la linea: '+ str(c) + '\n'
+            elif '* 1' in line:
+                if line[0:line.find('=')] in line[line.find('=')+1: line.find('*')]:
+                    # rule 10
+                    self.rules += 'Regla #10 aplicada en la linea: '+ str(c) + '\n'
+                    continue
+                else:
+                    # rule 14
+                    line = line[0: line.find('*')] + ';'
+                    self.rules += 'Regla #14 aplicada en la linea: '+ str(c) + '\n'
+            elif '/  1' in line:
+                if line[0:line.find('=')] in line[line.find('=')+1: line.find('/')]:
+                    # rule 11
+                    self.rules += 'Regla #11 aplicada en la linea: '+ str(c) + '\n'
+                    continue
+                else:
+                    # rule 15
+                    line = line[0: line.find('/')] + ';'
+                    self.rules += 'Regla #15 aplicada en la linea: '+ str(c) + '\n'
+
+            codeOptimized += line + '\n'
+            c = c + 1
+        return codeOptimized

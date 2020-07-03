@@ -130,6 +130,7 @@ class branch(node):
             node.TYPE["GOTO"]   : translate.GOTO,
             node.TYPE["LABEL"]  : translate.LABEL,
             node.TYPE["RETURN"] : translate.RETURN,
+            node.TYPE["POINT"] : translate.POINT,
 
             # CONTROL
             node.TYPE["IF"]  : translate.IF,
