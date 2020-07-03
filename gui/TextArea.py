@@ -62,7 +62,7 @@ class TextArea(Frame):
         bold_font = tkFont.Font(self.textarea, self.textarea.cget("font"))
         bold_font.configure(weight="bold")
         # setting the reserved words
-        self._words=["if", "else", "goto", "print", "unset", "read();"]
+        self._words=["if", "else", "goto", "printf", "scanf", "do", "while", "for", "int", "double", "float", "char", "return", "continue", "break", "case", "switch", "default"]
         
         self.textarea.tag_configure("reserved_word", foreground="#8f288c")          #violet
         self.textarea.tag_configure("variable", foreground="#5bc0de")               #sky-blue

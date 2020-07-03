@@ -456,8 +456,12 @@ def POINT(node, sym_table):
 
 # TODO merge with DECLARE
 def ASSIGN(node, sym_table):
-    e1 = node.getChild(0).execute(sym_table)
-    e2 = node.getChild(1).execute(sym_table)
+    e1 = node.getChild(0)
+    if e1.get3D() == '':
+        e1 = e1.execute(sym_table)
+    e2 = node.getChild(1)
+    if e2.get3D() == '':
+        e2 = e2.execute(sym_table)
 
     if e1 != None:
         node.append3D(e1.get3D())
@@ -614,6 +618,9 @@ def CONVERT(op, node, sym_table):
     node.setRef(ref)
     return node
 
+def VARRAY(node, sym_table):
+    return node
+
 def DECLARE(node, sym_table):
     typ = node.getChild(0).getType()
     for index in range(1, node.getSize(), 1):
@@ -626,7 +633,7 @@ def DECLARE(node, sym_table):
             # add value code
             value_code_gen = e2.get3D()
             node.append3D(value_code_gen)
-            if e1.getType() == node.TYPE['ID']:
+            if type(e1) != str:
                 #if typ >= e2.getType() or e2.getType() == node.TYPE['READ']:
                     # generate code only when value is a leaf
                     if value_code_gen == '':
@@ -639,8 +646,18 @@ def DECLARE(node, sym_table):
                     sym_table.add(e1.getValue(), typ, 0, 'ID', e2.getRef())
                     node.setRef(e2.getRef())
             else:
-                #TODO create reference to array
-                pass
+                ref = sym_table.getTemp()
+                node.setRef(ref)
+                e.setRef(ref)
+                node.gen3D('declare', ref,'array()')
+                sym_table.add(e.getValue(), typ, 0, 'ID',ref)
+
+                for index in range(e.getChild(1).getSize()):
+                    val = e.getChild(1).getChild(index)
+                    val.execute(sym_table)
+
+                    node.append3D(val.get3D())
+                    node.gen3D('declare', ref+'['+str(index)+']', val.getRef())
         else:
             if node.getRef() == '':
                 ref = sym_table.getTemp()

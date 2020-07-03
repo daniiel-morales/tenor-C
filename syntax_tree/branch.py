@@ -145,6 +145,8 @@ class branch(node):
             node.TYPE["ACCESS"]  : translate.ACCESS,
             node.TYPE["STRUCT"]  : translate.STRUCT,
 
+            node.TYPE["VARRAY"]  : translate.VARRAY,
+
             # LOOPS
             node.TYPE["FOR"]  : translate.FOR,
             node.TYPE["DO"]  : translate.DO,

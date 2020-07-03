@@ -75,7 +75,7 @@ class node():
         "CALL"  : 51,
         "READ"  : 52,
         "TOID"  : 53,
-
+        "VARRAY": 53.1,
         # titus for
         "ABS"   : 54,
         "UNSET" : 55,

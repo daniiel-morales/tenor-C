@@ -568,8 +568,13 @@ def parse():
                 new_branch.add(r_leaf)
                 new_branch.setType("ASSIGN")
             else:
-                #TODO assign array values
-                pass
+                l_leaf = p[1]
+                r_leaf = p[4]
+                r_leaf.setType("VARRAY")
+
+                new_branch.add(l_leaf)
+                new_branch.add(r_leaf)
+                new_branch.setType("ASSIGN")
         else:
             if type(p[1]) == branch:
                 #TODO assign to index of array
